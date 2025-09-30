@@ -1,11 +1,11 @@
 <!doctype html>
 <html lang="zh-CN"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>学生端 · 轻松学数学</title>
+<title>学生端 · 凉风有信</title>
 <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-<header><h1>学生端 · 轻松学数学</h1>
+<header><h1>学生端 · 凉风有信</h1>
   <div class="top-actions">
     <a class="button" href="/board.html">🏆 排行榜</a>
     <a class="button" id="logout">退出登录 👋</a>
@@ -44,7 +44,7 @@
 <div class="card"><h2>📣 4. 公告</h2><ul id="casts"></ul></div>
 </main>
 <script>
-function me(){ try{ return JSON.parse(sessionStorage.getItem("me")||"{}"); }catch{return {};} } if(!me().phone){ location.href="/"; }
+function me(){ try{ return JSON.parse(sessionStorage.getItem("me")||"{}"); }catch{return {};}} if(!me().phone){ location.href="/"; }
 function toast(msg, kind){const t=document.createElement('div');t.className='toast';t.textContent=(kind==='ok'?'✅ ':'')+(kind==='warn'?'⚠️ ':'')+(kind==='err'?'❌ ':'')+msg; if(kind==='ok')t.style.background='#16a34a'; if(kind==='warn')t.style.background='#f59e0b'; if(kind==='err')t.style.background='#dc2626'; document.body.appendChild(t); setTimeout(()=>{ t.style.opacity='0'; t.style.transition='opacity .3s'; setTimeout(()=>t.remove(),320); }, 1800);}
 async function api(u,opt={}){const r=await fetch(u,opt);const t=await r.json().catch(()=>({}));if(!r.ok)throw new Error(t.message||('HTTP '+r.status));return t;}
 document.getElementById('logout').onclick=()=>{ sessionStorage.removeItem('me'); location.href='/'; };
@@ -55,7 +55,7 @@ async function loadMistakes(){ const d=await api('/.netlify/functions/mistakes?p
 loadCasts(); loadMistakes();
 async function toBase64(file){return new Promise((res,rej)=>{const fr=new FileReader();fr.onload=()=>res(fr.result.split(',')[1]);fr.onerror=rej;fr.readAsDataURL(file);});}
 document.getElementById('upload').onclick=async()=>{ const f=document.getElementById('file').files[0]; if(!f){toast('先选择要上传的照片或PDF哦~','warn');return;} const b64=await toBase64(f); const r=await api('/.netlify/functions/upload',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:f.name, contentType:f.type||'application/octet-stream', data:b64, phone: me().phone})}); toast('上传完成 ✅','ok'); document.getElementById('msg').textContent='已上传：'+r.key; };
-// OCR（tesseract v2）
+// ---- OCR：tesseract.js v2 简易API，更稳 ----
 async function ocrImage(file){ const { data:{ text } } = await Tesseract.recognize(file, 'chi_sim'); return text; }
 async function ocrPdf(file){
   const buf = await file.arrayBuffer();
@@ -81,12 +81,13 @@ document.getElementById('ocr').onclick=async()=>{
   const pg=document.getElementById('pg'); pg.style.display='block'; pg.value=0;
   document.getElementById('msg').textContent='正在OCR，请稍候…';
   try{
-    const text = f.type.includes('pdf') ? await ocrPdf(f) : await ocrImage(f);
+    const text = f.type && f.type.includes('pdf') ? await ocrPdf(f) : await ocrImage(f);
     document.getElementById('submission').value=(document.getElementById('submission').value+'\n'+text).trim();
     document.getElementById('msg').textContent='OCR完成，已写入文本框';
   }catch(e){ toast(e.message,'err'); document.getElementById('msg').textContent='OCR失败'; }
   finally{ pg.style.display='none'; }
 };
+// ---- 批改：增加可视化“进行中”状态 ----
 document.querySelectorAll('[data-lv]').forEach(b=>b.onclick=async()=>{ const lv=b.getAttribute('data-lv'); const r=await api('/.netlify/functions/plan?level='+encodeURIComponent(lv)+'&phone='+encodeURIComponent(me().phone)); document.getElementById('plan').textContent=r.plan||'生成失败，请稍后再试'; });
 document.getElementById('grade').onclick=async(e)=>{
   const btn=e.target; const submission=document.getElementById('submission').value.trim();
@@ -101,6 +102,7 @@ document.getElementById('grade').onclick=async(e)=>{
   finally{ btn.disabled=false; btn.textContent=old; }
 };
 </script>
+<!-- 使用 tesseract.js v2 更稳 -->
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@2/dist/tesseract.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@4.7.76/build/pdf.min.js"></script>
 </body></html>

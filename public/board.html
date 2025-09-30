@@ -19,7 +19,19 @@ document.getElementById('checkin').onclick=async()=>{
   if(!me.phone){ toast('请先登录，再来打卡~','warn'); location.href='/'; return; }
   try{ await api('/.netlify/functions/activity',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:'checkin', phone: me.phone})}); toast('打卡+1 👍','ok'); document.getElementById('msg').textContent='已打卡！'; load(); }catch(e){ toast(e.message,'err'); }
 };
-async function load(){const board = await api('/.netlify/functions/activity?days=7');const tbody = document.querySelector('#board tbody'); tbody.innerHTML='';(board.board||[]).forEach(x=>{const delta = x.progress_delta||0;const sign = delta>0 ? '↑' : (delta<0 ? '↓' : '→');const name = x.name || x.phone || '未命名';const tr = document.createElement('tr');tr.innerHTML = '<td data-th="学生">'+ name +'</td><td data-th="打卡总数">'+x.total_checkins+'</td><td data-th="改错总数">'+x.total_corrections+'</td><td data-th="进步趋势">'+sign+' '+delta.toFixed(2)+'</td>';tbody.appendChild(tr);});}
+async function load(){
+  const board = await api('/.netlify/functions/activity?days=7');
+  const tbody = document.querySelector('#board tbody');
+  tbody.innerHTML='';
+  (board.board||[]).forEach(x=>{
+    const delta = x.progress_delta||0;
+    const sign = delta>0 ? '↑' : (delta<0 ? '↓' : '→');
+    const name = x.name || x.phone || '未命名';
+    const tr = document.createElement('tr');
+    tr.innerHTML = '<td data-th="学生">'+ name +'</td><td data-th="打卡总数">'+x.total_checkins+'</td><td data-th="改错总数">'+x.total_corrections+'</td><td data-th="进步趋势">'+sign+' '+delta.toFixed(2)+'</td>';
+    tbody.appendChild(tr);
+  });
+}
 load();
 </script>
 </body></html>

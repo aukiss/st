@@ -4,8 +4,10 @@ export async function callLLM(messages){
   if(!base || !key){
     return { "__safe_mode__": true, "reason": "缺少 OPENAI_BASE_URL 或 OPENAI_API_KEY（请在 Netlify Site settings → Environment variables 配置）" };
   }
+
   const controller = new AbortController();
   const t = setTimeout(()=>controller.abort(), 60000); // 60s 超时
+
   try{
     const r = await fetch(`${base}/chat/completions`, {
       method:"POST",
@@ -18,8 +20,10 @@ export async function callLLM(messages){
       signal: controller.signal
     });
     clearTimeout(t);
+
     const txt = await r.text();
     if(!r.ok) return { "__safe_mode__": true, "reason": "上游模型接口响应异常", "status": r.status, "body": txt };
+
     // 兼容各种网关，把内容中第一段 JSON 提取出来
     try{
       const data=JSON.parse(txt);
@@ -36,6 +40,7 @@ export async function callLLM(messages){
     return { "__safe_mode__": true, "reason": "调用模型接口网络/超时错误", "error": String(e) };
   }
 }
+
 // 提取第一个看起来像 JSON 的大括号片段
 function extractJson(s){
   if(typeof s!=="string") return "";
