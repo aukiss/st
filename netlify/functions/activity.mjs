@@ -4,7 +4,6 @@ export async function handler(event){
   if(event.httpMethod==="POST"){
     let payload={};
     try{ payload = JSON.parse(event.body||"{}"); }catch{ payload={}; }
-
     const kind = payload.kind; 
     const phone = payload.phone;
 
@@ -17,7 +16,6 @@ export async function handler(event){
       await db.setActivities(arr);
       return j(200,{ ok:true });
     }catch(e){
-      // 安全兜底：不让 502
       return j(200,{ ok:false, message:"（安全模式）记录失败，但不影响继续学习。", error:String(e) });
     }
   }

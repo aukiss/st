@@ -1,22 +1,25 @@
+// 动态引入 Netlify Blobs；失败则使用内存兜底（冷启动会丢，但绝不 502）
 let mem = {
   "db/answer.json": "",
   "db/activities.json": [],
   "db/profiles.json": {},
-  "db/broadcasts.json": {}
+  "db/broadcasts.json": []
 };
 const memMistakes = {};
+
 async function loadBlobs(){
   try{
     const mod = await import("@netlify/blobs");
     return mod;
   }catch(e){
+    // 没装好、打包缺失或运行时不可用，返回 null 走内存
     return null;
   }
 }
+
 async function readJson(key, fallback){
   const blobs = await loadBlobs();
   if(!blobs){
-    // fallback to in-memory (ephemeral)
     if(key.startsWith("db/mistakes_")){
       return memMistakes[key] ?? fallback;
     }
@@ -31,10 +34,10 @@ async function readJson(key, fallback){
     return fallback;
   }
 }
+
 async function writeJson(key, obj){
   const blobs = await loadBlobs();
   if(!blobs){
-    // in-memory (cold start会清空，但至少不502)
     if(key.startsWith("db/mistakes_")){
       memMistakes[key] = obj;
       return;
@@ -45,6 +48,7 @@ async function writeJson(key, obj){
   const { setBlob } = blobs;
   await setBlob({ name: key, data: JSON.stringify(obj) });
 }
+
 export const db = {
   getAnswer: ()=>readJson("db/answer.json",""),
   setAnswer: (t)=>writeJson("db/answer.json",t||""),

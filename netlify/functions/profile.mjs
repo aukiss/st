@@ -13,7 +13,6 @@ export async function handler(event){
     await db.setProfiles(prof);
     return { statusCode:200, body: JSON.stringify({ ok:true }) };
   }catch(e){
-    // 安全兜底：即使写失败也不要 502
     return { statusCode:200, body: JSON.stringify({ ok:false, message:"运行于安全模式：保存失败但不影响继续使用。", error:String(e) }) };
   }
 }

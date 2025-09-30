@@ -32,8 +32,32 @@ if(!me().phone){ location.href="/"; }
 function toast(msg, kind){const t=document.createElement('div');t.className='toast';t.textContent=(kind==='ok'?'✅ ':'')+(kind==='warn'?'⚠️ ':'')+(kind==='err'?'❌ ':'')+msg; if(kind==='ok')t.style.background='#16a34a'; if(kind==='warn')t.style.background='#f59e0b'; if(kind==='err')t.style.background='#dc2626'; document.body.appendChild(t); setTimeout(()=>{ t.style.opacity='0'; t.style.transition='opacity .3s'; setTimeout(()=>t.remove(),320); }, 1800);}
 async function api(u,opt={}){const r=await fetch(u,opt);const t=await r.json().catch(()=>({}));if(!r.ok)throw new Error(t.message||('HTTP '+r.status));return t;}
 document.getElementById('logout').onclick=()=>{ sessionStorage.removeItem('me'); location.href='/'; };
-document.getElementById('saveAns').onclick=async()=>{ const body=document.getElementById('ans').value; const ret=await api('/.netlify/functions/answers',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({body, phone: me().phone})}); toast('答案库已更新 ✅','ok'); document.getElementById('ansMsg').textContent=ret.message||'OK'; };
-document.getElementById('sendB').onclick=async()=>{ const title=document.getElementById('bTitle').value; const body=document.getElementById('bBody').value; const audience=document.getElementById('aud').value; const student_phone=document.getElementById('stuPhone').value.replace(/\D+/g,''); const ret=await api('/.netlify/functions/broadcasts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title,body,audience,student_phone, phone: me().phone})}); toast('已发布到班级 📣','ok'); document.getElementById('bMsg').textContent=ret.message||'OK'; };
+
+// 保存答案库：进行中状态
+document.getElementById('saveAns').onclick=async(e)=>{
+  const btn=e.target; const body=document.getElementById('ans').value; 
+  btn.disabled=true; const old=btn.textContent; btn.textContent='保存中…';
+  try{
+    const ret=await api('/.netlify/functions/answers',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({body, phone: me().phone})});
+    toast('答案库已更新 ✅','ok'); document.getElementById('ansMsg').textContent=ret.message||'OK';
+  }catch(err){ toast(err.message,'err'); }
+  finally{ btn.disabled=false; btn.textContent=old; }
+};
+
+// 发布广播：进行中状态
+document.getElementById('sendB').onclick=async(e)=>{
+  const btn=e.target; const title=document.getElementById('bTitle').value; 
+  const body=document.getElementById('bBody').value; const audience=document.getElementById('aud').value; 
+  const student_phone=(document.getElementById('stuPhone').value||'').replace(/\D+/g,'');
+  btn.disabled=true; const old=btn.textContent; btn.textContent='发布中…';
+  try{
+    const ret=await api('/.netlify/functions/broadcasts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title,body,audience,student_phone, phone: me().phone})});
+    toast('已发布到班级 📣','ok'); document.getElementById('bMsg').textContent=ret.message||'OK';
+  }catch(err){ toast(err.message,'err'); }
+  finally{ btn.disabled=false; btn.textContent=old; }
+};
+
+// 学生列表
 async function loadStudents(){ const d=await api('/.netlify/functions/students'); const tbody=document.querySelector('#students tbody'); tbody.innerHTML=''; (d||[]).forEach(s=>{ const tr=document.createElement('tr'); tr.innerHTML='<td data-th="昵称">'+(s.name||'')+'</td><td data-th="手机号">'+(s.phone||'')+'</td><td data-th="角色">'+(s.role||'')+'</td><td data-th="水平">'+(s.level||'')+'</td>'; tbody.appendChild(tr); }); }
 loadStudents();
 </script>

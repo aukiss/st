@@ -10,14 +10,14 @@
 </nav></header>
 <main>
 <div class="card" style="max-width:520px;margin:2vh auto">
-  <h2>固定账号登录</h2>
-  <div class="hint">🔒 已关闭注册。请使用老师分配的<span class="pill">手机号</span>和<span class="pill">密码</span>登录。学生默认密码=手机号。</div>
+  <h2>账号登录</h2>
+  <div class="hint">🔒 请使用老师分配的<span class="pill">账号</span>和<span class="pill">密码</span>登录。</div>
   <label>📞 手机号</label>
-  <input id="phone" type="tel" placeholder="例如：17826182908" inputmode="numeric" pattern="\d{6,}"/>
+  <input id="phone" type="tel" placeholder="请输入账号" inputmode="numeric" pattern="\d{6,}"/>
   <label>🔒 密码</label>
-  <input id="password" type="password" placeholder="学生默认与手机号相同" autocomplete="current-password"/>
+  <input id="password" type="password" placeholder="输入密码" autocomplete="current-password"/>
   <div class="top-actions" style="margin-top:8px"><button id="login">登录 🚀</button></div>
-  <p class="muted">老师（手机号/密码）：17826182908 / mayi223462123</p>
+  <p class="muted">@凉风有信</p>
   <p class="muted" id="tip"></p>
 </div>
 </main>
@@ -25,16 +25,18 @@
 function toast(msg, kind){const t=document.createElement('div');t.className='toast';t.textContent = (kind==='ok'?'✅ ':'') + (kind==='warn'?'⚠️ ':'') + (kind==='err'?'❌ ':'') + msg; if(kind==='ok') t.style.background='#16a34a'; if(kind==='warn') t.style.background='#f59e0b'; if(kind==='err') t.style.background='#dc2626'; document.body.appendChild(t); setTimeout(()=>{ t.style.opacity='0'; t.style.transition='opacity .3s'; setTimeout(()=>t.remove(),320); }, 1800);}
 async function post(u,b){const r=await fetch(u,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(b)});const t=await r.json().catch(()=>({}));if(!r.ok)throw new Error(t.message||("HTTP "+r.status));return t;}
 function normPhone(p){return (p||"").replace(/\D+/g,"");}
-document.getElementById('login').onclick=async()=>{
+document.getElementById('login').onclick=async(e)=>{
+  const btn=e.target;
   const phone=normPhone(document.getElementById('phone').value);
   const password=document.getElementById('password').value;
-  if(!phone||password.length<4){toast("请填写手机号和密码","warn");return;}
-  document.getElementById('tip').textContent="⏳ 正在登录…";
+  if(!phone||password.length<4){toast("请填写账号和密码","warn");return;}
+  btn.disabled=true; const old=btn.textContent; btn.textContent='登录中…';
   try{
     const me = await post("/.netlify/functions/auth_login",{phone,password});
     sessionStorage.setItem("me", JSON.stringify(me));
     location.href = me.role==="teacher" ? "/teacher.html" : "/student.html";
   }catch(e){toast(e.message,'err');}
+  finally{btn.disabled=false; btn.textContent=old;}
 };
 </script>
 </body></html>
