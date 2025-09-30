@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="zh-CN"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>班级排行榜（最近7天）</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header><h1>🏆 班级排行榜（最近7天）</h1><nav class="top-actions"><a class="button" href="/">首页</a></nav></header>
+<div class="card"><button id="checkin" style="padding:12px 14px;border-radius:10px;background:var(--primary);color:var(--primary-ink);border:none">👉 今日打卡</button><span class="muted">（每天点一次，累积在排行榜）</span><p id="msg"></p></div>
+<div class="card"><span class="badge">看懂小贴士</span> ↑ 趋势在变好；→ 持平；↓ 需要加油。改错越多，说明越努力！</div>
+<div class="card"><h2>总榜（最近7天）</h2></div>
+<table id="board"><thead><tr><th>学生</th><th>打卡总数</th><th>改错总数</th><th>进步趋势</th></tr></thead><tbody></tbody></table>
+<p class="muted" style="margin:0 16px">进步趋势 = 后半段的平均“改错数” − 前半段平均“改错数”。↑ 正值代表在进步。</p>
+<script>
+function toast(msg, kind){const t=document.createElement('div');t.className='toast';t.textContent=(kind==='ok'?'✅ ':'')+(kind==='warn'?'⚠️ ':'')+(kind==='err'?'❌ ':'')+msg; if(kind==='ok')t.style.background='#16a34a'; if(kind==='warn')t.style.background='#f59e0b'; if(kind==='err')t.style.background='#dc2626'; document.body.appendChild(t); setTimeout(()=>{ t.style.opacity='0'; t.style.transition='opacity .3s'; setTimeout(()=>t.remove(),320); }, 1800);}
+async function api(u,opt={}){const r=await fetch(u,opt);const t=await r.json().catch(()=>({}));if(!r.ok)throw new Error(t.message||('HTTP '+r.status));return t;}
+document.getElementById('checkin').onclick=async()=>{try{ await api('/.netlify/functions/activity',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:'checkin', phone: (JSON.parse(sessionStorage.getItem('me')||'{}').phone||'未登录')})}); toast('打卡+1 👍','ok'); document.getElementById('msg').textContent='已打卡！'; load(); }catch(e){ toast(e.message,'err'); }};
+async function load(){const board = await api('/.netlify/functions/activity?days=7');const tbody = document.querySelector('#board tbody'); tbody.innerHTML='';(board.board||[]).forEach(x=>{const delta = x.progress_delta||0;const sign = delta>0 ? '↑' : (delta<0 ? '↓' : '→');const name = x.name || x.phone || '未命名';const tr = document.createElement('tr');tr.innerHTML = '<td data-th="学生">'+ name +'</td><td data-th="打卡总数">'+x.total_checkins+'</td><td data-th="改错总数">'+x.total_corrections+'</td><td data-th="进步趋势">'+sign+' '+delta.toFixed(2)+'</td>';tbody.appendChild(tr);});}
+load();
+</script>
+</body></html>
