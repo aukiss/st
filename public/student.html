@@ -29,7 +29,7 @@
   <progress id="pg" value="0" max="100" style="display:none"></progress>
   <textarea id="submission" rows="6" placeholder="也可以直接把答案文本粘贴在这里~"></textarea>
   <button id="grade">🧠 提交并自动批改</button><p id="msg"></p>
-  <div class="hint">拍作业要正、亮、清楚；PDF 自动识别前 3 页。</div>
+  <div class="hint">批改通常需要 20~60 秒，请耐心等待；过程中按钮会变灰并显示“正在批改”。</div>
 </div>
 
 <div class="card"><h2>📘 2. 我的错题本</h2>
@@ -44,24 +44,63 @@
 <div class="card"><h2>📣 4. 公告</h2><ul id="casts"></ul></div>
 </main>
 <script>
-function me(){ try{ return JSON.parse(sessionStorage.getItem("me")||"{}"); }catch{return {};}}
-if(!me().phone){ location.href="/"; }
+function me(){ try{ return JSON.parse(sessionStorage.getItem("me")||"{}"); }catch{return {};} } if(!me().phone){ location.href="/"; }
 function toast(msg, kind){const t=document.createElement('div');t.className='toast';t.textContent=(kind==='ok'?'✅ ':'')+(kind==='warn'?'⚠️ ':'')+(kind==='err'?'❌ ':'')+msg; if(kind==='ok')t.style.background='#16a34a'; if(kind==='warn')t.style.background='#f59e0b'; if(kind==='err')t.style.background='#dc2626'; document.body.appendChild(t); setTimeout(()=>{ t.style.opacity='0'; t.style.transition='opacity .3s'; setTimeout(()=>t.remove(),320); }, 1800);}
 async function api(u,opt={}){const r=await fetch(u,opt);const t=await r.json().catch(()=>({}));if(!r.ok)throw new Error(t.message||('HTTP '+r.status));return t;}
 document.getElementById('logout').onclick=()=>{ sessionStorage.removeItem('me'); location.href='/'; };
 document.getElementById('checkin').onclick=async()=>{ try{ await api('/.netlify/functions/activity',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:'checkin', phone: me().phone})}); toast('打卡成功，棒棒哒！','ok'); document.getElementById('msg').textContent='已打卡！'; }catch(e){ toast(e.message,'err'); } };
-document.getElementById('saveProfile').onclick=async()=>{ const name=document.getElementById('nick').value.trim(); const level=document.getElementById('level').value; try{ await api('/.netlify/functions/profile',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone:me().phone,name,level})}); toast('资料已保存 ✅','ok'); document.getElementById('pMsg').textContent='已保存'; }catch(e){ toast(e.message,'err'); } };
+document.getElementById('saveProfile').onclick=async()=>{ const name=document.getElementById('nick').value.trim(); const level=document.getElementById('level').value; const btn=event.target; btn.disabled=true; btn.textContent='保存中…'; try{ const ret=await api('/.netlify/functions/profile',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone:me().phone,name,level})}); if(ret.ok){ toast('资料已保存 ✅','ok'); } else { toast(ret.message||'保存失败（安全模式）','warn'); } document.getElementById('pMsg').textContent='已保存'; }catch(e){ toast(e.message,'err'); } finally{ btn.disabled=false; btn.textContent='保存资料'; } };
 async function loadCasts(){ const d=await api('/.netlify/functions/broadcasts'); const ul=document.getElementById('casts'); ul.innerHTML=''; (d||[]).forEach(x=>{ const li=document.createElement('li'); li.textContent=(new Date(x.created_at).toLocaleString())+' · '+x.title+'：'+x.body; ul.appendChild(li); }); }
 async function loadMistakes(){ const d=await api('/.netlify/functions/mistakes?phone='+encodeURIComponent(me().phone)); const tb=document.querySelector('#mistakes tbody'); tb.innerHTML=''; (d||[]).forEach(m=>{ const tr=document.createElement('tr'); tr.innerHTML='<td data-th="题目">'+(m.q_text||'')+'</td><td data-th="我的答案">'+(m.user_answer||'')+'</td><td data-th="结论"><span class="pill">'+(m.result||'')+'</span></td><td data-th="操作"><button data-id="'+m.id+'" class="tutor">📘 错题辅导</button> <button data-id="'+m.id+'" class="resolve">🟢 已改对</button></td>'; tb.appendChild(tr); }); document.querySelectorAll('.tutor').forEach(b=>b.onclick=async()=>{ const id=b.getAttribute('data-id'); const r=await api('/.netlify/functions/tutor?id='+id+'&phone='+encodeURIComponent(me().phone)); toast('已生成辅导卡 ✅','ok'); alert(r.card||'已生成辅导卡'); }); document.querySelectorAll('.resolve').forEach(b=>b.onclick=async()=>{ const id=b.getAttribute('data-id'); await api('/.netlify/functions/resolve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id, phone: me().phone})}); toast('好样的，已标记为改对！','ok'); loadMistakes(); }); }
 loadCasts(); loadMistakes();
 async function toBase64(file){return new Promise((res,rej)=>{const fr=new FileReader();fr.onload=()=>res(fr.result.split(',')[1]);fr.onerror=rej;fr.readAsDataURL(file);});}
 document.getElementById('upload').onclick=async()=>{ const f=document.getElementById('file').files[0]; if(!f){toast('先选择要上传的照片或PDF哦~','warn');return;} const b64=await toBase64(f); const r=await api('/.netlify/functions/upload',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:f.name, contentType:f.type||'application/octet-stream', data:b64, phone: me().phone})}); toast('上传完成 ✅','ok'); document.getElementById('msg').textContent='已上传：'+r.key; };
-async function ocrImageBitmap(bmp, lang='chi_sim+eng'){const worker = await Tesseract.createWorker(lang);const { data: { text } } = await worker.recognize(bmp);await worker.terminate();return text;}
-async function ocrFile(file){const pg=document.getElementById('pg'); pg.style.display='block'; pg.value=0;let text='';if(file.type && file.type.includes('pdf')){const buf = await file.arrayBuffer();const pdf = await pdfjsLib.getDocument({data:buf}).promise;const pages = Math.min(pdf.numPages, 3);for(let i=1;i<=pages;i++){const p=await pdf.getPage(i); const isMobile = window.matchMedia('(max-width: 768px)').matches; const RENDER_SCALE = isMobile ? 1.5 : 2; const v=p.getViewport({scale: RENDER_SCALE});const canvas=document.createElement('canvas'); const ctx=canvas.getContext('2d');canvas.width=v.width; canvas.height=v.height;await p.render({canvasContext:ctx, viewport:v}).promise;const bmp=await createImageBitmap(canvas);const t = await ocrImageBitmap(bmp);text += "\n\n—— 第"+i+"页 ——\n"+t;pg.value = Math.round(i/pages*100);}}else{const bmp = await createImageBitmap(file);text = await ocrImageBitmap(bmp);pg.value=100;}pg.style.display='none';return text;}
-document.getElementById('ocr').onclick=async()=>{const f=document.getElementById('file').files[0]; if(!f){toast('先选择图片或PDF~','warn');return;} document.getElementById('msg').textContent='正在OCR，请稍候…'; try{ const text = await ocrFile(f); document.getElementById('submission').value=(document.getElementById('submission').value+'\n'+text).trim(); document.getElementById('msg').textContent='OCR完成，已写入文本框'; }catch(e){ toast(e.message,'err'); document.getElementById('msg').textContent='OCR失败'; } };
+// OCR（tesseract v2）
+async function ocrImage(file){ const { data:{ text } } = await Tesseract.recognize(file, 'chi_sim'); return text; }
+async function ocrPdf(file){
+  const buf = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+  const pages = Math.min(pdf.numPages, 3);
+  let text='';
+  for(let i=1;i<=pages;i++){
+    const p = await pdf.getPage(i);
+    const v = p.getViewport({ scale: 1.8 });
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = v.width; canvas.height = v.height;
+    await p.render({ canvasContext: ctx, viewport: v }).promise;
+    const blob = await new Promise(r=>canvas.toBlob(r));
+    const { data:{ text: t } } = await Tesseract.recognize(blob, 'chi_sim');
+    text += "\n\n—— 第"+i+"页 ——\n"+t;
+    document.getElementById('pg').value = Math.round(i/pages*100);
+  }
+  return text;
+}
+document.getElementById('ocr').onclick=async()=>{
+  const f=document.getElementById('file').files[0]; if(!f){toast('先选择图片或PDF~','warn');return;}
+  const pg=document.getElementById('pg'); pg.style.display='block'; pg.value=0;
+  document.getElementById('msg').textContent='正在OCR，请稍候…';
+  try{
+    const text = f.type.includes('pdf') ? await ocrPdf(f) : await ocrImage(f);
+    document.getElementById('submission').value=(document.getElementById('submission').value+'\n'+text).trim();
+    document.getElementById('msg').textContent='OCR完成，已写入文本框';
+  }catch(e){ toast(e.message,'err'); document.getElementById('msg').textContent='OCR失败'; }
+  finally{ pg.style.display='none'; }
+};
 document.querySelectorAll('[data-lv]').forEach(b=>b.onclick=async()=>{ const lv=b.getAttribute('data-lv'); const r=await api('/.netlify/functions/plan?level='+encodeURIComponent(lv)+'&phone='+encodeURIComponent(me().phone)); document.getElementById('plan').textContent=r.plan||'生成失败，请稍后再试'; });
-document.getElementById('grade').onclick=async()=>{ const submission=document.getElementById('submission').value.trim(); if(!submission){toast('请先粘贴文本或进行 OCR 识别~','warn');return;} const r=await api('/.netlify/functions/grade',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({submission, phone: me().phone})}); toast('批改完成 ✅','ok'); console.log(r); loadMistakes(); };
+document.getElementById('grade').onclick=async(e)=>{
+  const btn=e.target; const submission=document.getElementById('submission').value.trim();
+  if(!submission){toast('请先粘贴文本或进行 OCR 识别~','warn');return;}
+  btn.disabled=true; const old=btn.textContent; btn.textContent='⏳ 正在批改（20~60秒）…';
+  document.getElementById('msg').textContent='正在提交到老师系统判题…';
+  try{
+    const r=await api('/.netlify/functions/grade',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({submission, phone: me().phone})});
+    if(r.data){ toast('批改完成 ✅','ok'); } else { toast(r.message||'批改完成（安全模式）','warn'); }
+    console.log(r); loadMistakes();
+  }catch(e){ toast(e.message,'err'); }
+  finally{ btn.disabled=false; btn.textContent=old; }
+};
 </script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@2/dist/tesseract.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@4.7.76/build/pdf.min.js"></script>
 </body></html>

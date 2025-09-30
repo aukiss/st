@@ -14,7 +14,11 @@
 <script>
 function toast(msg, kind){const t=document.createElement('div');t.className='toast';t.textContent=(kind==='ok'?'✅ ':'')+(kind==='warn'?'⚠️ ':'')+(kind==='err'?'❌ ':'')+msg; if(kind==='ok')t.style.background='#16a34a'; if(kind==='warn')t.style.background='#f59e0b'; if(kind==='err')t.style.background='#dc2626'; document.body.appendChild(t); setTimeout(()=>{ t.style.opacity='0'; t.style.transition='opacity .3s'; setTimeout(()=>t.remove(),320); }, 1800);}
 async function api(u,opt={}){const r=await fetch(u,opt);const t=await r.json().catch(()=>({}));if(!r.ok)throw new Error(t.message||('HTTP '+r.status));return t;}
-document.getElementById('checkin').onclick=async()=>{try{ await api('/.netlify/functions/activity',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:'checkin', phone: (JSON.parse(sessionStorage.getItem('me')||'{}').phone||'未登录')})}); toast('打卡+1 👍','ok'); document.getElementById('msg').textContent='已打卡！'; load(); }catch(e){ toast(e.message,'err'); }};
+document.getElementById('checkin').onclick=async()=>{
+  const me = JSON.parse(sessionStorage.getItem('me')||'{}');
+  if(!me.phone){ toast('请先登录，再来打卡~','warn'); location.href='/'; return; }
+  try{ await api('/.netlify/functions/activity',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:'checkin', phone: me.phone})}); toast('打卡+1 👍','ok'); document.getElementById('msg').textContent='已打卡！'; load(); }catch(e){ toast(e.message,'err'); }
+};
 async function load(){const board = await api('/.netlify/functions/activity?days=7');const tbody = document.querySelector('#board tbody'); tbody.innerHTML='';(board.board||[]).forEach(x=>{const delta = x.progress_delta||0;const sign = delta>0 ? '↑' : (delta<0 ? '↓' : '→');const name = x.name || x.phone || '未命名';const tr = document.createElement('tr');tr.innerHTML = '<td data-th="学生">'+ name +'</td><td data-th="打卡总数">'+x.total_checkins+'</td><td data-th="改错总数">'+x.total_corrections+'</td><td data-th="进步趋势">'+sign+' '+delta.toFixed(2)+'</td>';tbody.appendChild(tr);});}
 load();
 </script>

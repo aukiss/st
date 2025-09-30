@@ -1,13 +1,19 @@
 import { db } from "./_lib/storage.mjs";
 export async function handler(event){
   if(event.httpMethod==="POST"){
-    const { kind, phone } = JSON.parse(event.body||"{}");
+    let payload={};
+    try{ payload = JSON.parse(event.body||"{}"); }catch{ payload={}; }
+    const kind = payload.kind; const phone = payload.phone;
     if(!phone) return j(400,{ message:"缺少 phone" });
     if(!kind || !["checkin","correction"].includes(kind)) return j(400,{ message:"kind 必须是 checkin 或 correction" });
-    const arr = await db.getActivities();
-    arr.push({ id: Date.now(), user_id: phone, kind, created_at: Date.now() });
-    await db.setActivities(arr);
-    return j(200,{ ok:true });
+    try{
+      const arr = await db.getActivities();
+      arr.push({ id: Date.now(), user_id: phone, kind, created_at: Date.now() });
+      await db.setActivities(arr);
+      return j(200,{ ok:true });
+    }catch(e){
+      return j(200,{ ok:false, message:"（安全模式）记录失败，但不影响继续学习。", error:String(e) });
+    }
   }
   const days = Math.max(1, Math.min(30, parseInt((event.queryStringParameters||{}).days||"7")));
   const since = Date.now() - days*24*3600*1000;
