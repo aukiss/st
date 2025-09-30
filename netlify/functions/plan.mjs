@@ -10,5 +10,8 @@ export async function handler(event){
     { role:"user", content:`学生最近错题主题：${topics}\n难度：${level}\n教材：苏教版六年级上册。请生成7天计划。` }
   ];
   const out = await callLLM(msgs, schema);
+  if(out.__safe_mode__){
+    return { statusCode:200, body: JSON.stringify({ plan:"（安全模式）未连接模型，请老师在 Netlify 环境变量配置 OPENAI_BASE_URL 与 OPENAI_API_KEY 后重试。", safe_info: out }) };
+  }
   return { statusCode:200, body: JSON.stringify(out) };
 }

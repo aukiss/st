@@ -11,6 +11,9 @@ export async function handler(event){
     { role:"user", content:`错题：${m.q_text}\n学生答案：${m.user_answer}\n标准答案：${m.correct_answer||""}\n老师点评：${m.feedback||""}\n请生成讲解卡。` }
   ];
   const out = await callLLM(msgs, schema);
+  if(out.__safe_mode__){
+    return { statusCode:200, body: JSON.stringify({ card:"（安全模式）未连接模型，请老师在 Netlify 环境变量配置 OPENAI_BASE_URL 与 OPENAI_API_KEY 后再点击生成。", safe_info: out }) };
+  }
   m.tutor_card = out.card||""; await db.setMistakes(phone, arr);
   return { statusCode:200, body: JSON.stringify(out) };
 }
