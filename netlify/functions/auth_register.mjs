@@ -1,0 +1,1 @@
+export async function handler(){ return { statusCode:403, body: JSON.stringify({ message:"禁止注册，请用预设账号登录" }) }; }

@@ -1,0 +1,114 @@
+[
+  {
+    "name": "老师",
+    "phone": "17826182908",
+    "password": "mayi223462123",
+    "role": "teacher",
+    "level": "中等"
+  },
+  {
+    "name": "梦蕊",
+    "phone": "18136092447",
+    "password": "18136092447",
+    "role": "student",
+    "level": "中等"
+  },
+  {
+    "name": "牛爸",
+    "phone": "15162665790",
+    "password": "15162665790",
+    "role": "student",
+    "level": "中等"
+  },
+  {
+    "name": "王悠然",
+    "phone": "15162665791",
+    "password": "15162665791",
+    "role": "student",
+    "level": "中等"
+  },
+  {
+    "name": "陆子风",
+    "phone": "15162665792",
+    "password": "15162665792",
+    "role": "student",
+    "level": "中等"
+  },
+  {
+    "name": "钮心悦",
+    "phone": "15162665793",
+    "password": "15162665793",
+    "role": "student",
+    "level": "中等"
+  },
+  {
+    "name": "李彦辰",
+    "phone": "15162665794",
+    "password": "15162665794",
+    "role": "student",
+    "level": "中等"
+  },
+  {
+    "name": "韩峥",
+    "phone": "15162665795",
+    "password": "15162665795",
+    "role": "student",
+    "level": "中等"
+  },
+  {
+    "name": "孔乔哲",
+    "phone": "15162665796",
+    "password": "15162665796",
+    "role": "student",
+    "level": "中等"
+  },
+  {
+    "name": "姚沛霖",
+    "phone": "15162665799",
+    "password": "15162665799",
+    "role": "student",
+    "level": "中等"
+  },
+  {
+    "name": "学生A",
+    "phone": "15162665701",
+    "password": "15162665701",
+    "role": "student",
+    "level": "中等"
+  },
+  {
+    "name": "学生B",
+    "phone": "15162665702",
+    "password": "15162665702",
+    "role": "student",
+    "level": "中等"
+  },
+  {
+    "name": "学生C",
+    "phone": "15162665703",
+    "password": "15162665703",
+    "role": "student",
+    "level": "中等"
+  },
+  {
+    "name": "学生D",
+    "phone": "15162665704",
+    "password": "15162665704",
+    "role": "student",
+    "level": "中等"
+  },
+  {
+    "name": "学生E",
+    "phone": "15162665705",
+    "password": "15162665705",
+    "role": "student",
+    "level": "中等"
+  },
+  {
+    "name": "学生F",
+    "phone": "15162665706",
+    "password": "15162665706",
+    "role": "student",
+    "level": "中等"
+  }
+]
